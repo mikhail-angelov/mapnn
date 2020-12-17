@@ -1,0 +1,75 @@
+#placemarks {
+  position: absolute;
+  width: 180px;
+  height: 300px;
+  bottom: 100px;
+  left: 10px;
+  z-index: 2;
+  background-color: transparent;
+  display: flex;
+  align-items: flex-end;
+
+  .placemark-icon {
+    font-size: 32px;
+    background-color: #f0ffff;
+    border-radius: 4px;
+    width: auto;
+  }
+  .placemark {
+    height: 100%;
+    width: 100%;
+    background-color: azure;
+    border: 1px solid #add8e60f;
+    overflow: auto;
+  }
+
+  .upload {
+    width: 20px;
+    margin: 0 1px;
+    cursor: pointer;
+  }
+  .upload:hover {
+    background: cornflowerblue;
+  }
+  .header {
+    display: flex;
+    padding: 8px;
+    background-color: #dcdcdc;
+    border-bottom: 1px solid #808080;
+  }
+  .header .title {
+    flex: 1;
+  }
+}
+
+#placemarks .list {
+  margin: 0;
+  padding: 0;
+}
+#placemarks .place-item {
+  display: flex;
+  list-style-type: none;
+  border-bottom: 0.5px solid #6495ed;
+  padding: 6px 8px;
+}
+#placemarks .place-item:hover {
+  background-color: #dcdcdc;
+}
+
+#placemarks .place-item .title {
+  flex: 1;
+}
+
+.icon-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 20px;
+  margin: 0 1px;
+}
+.icon-button:focus {
+  outline: none;
+}
+.icon-button:hover {
+  background: cornflowerblue;
+}
