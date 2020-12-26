@@ -7,14 +7,7 @@ export const createOpacitySlider = (mapSelector, init) => {
   const applyOpacity = () => {
     const mapElements = document.querySelectorAll(mapSelector);
     mapElements.forEach((e) => (e.style.opacity = opacity / 100));
-    //hack to add transparency
-    const bg = document.querySelector(".ymaps-2-1-77-map-bg");
-    if (bg) {
-      bg.style.backgroundImage = "none";
-      if (isMobile()) {
-        bg.style.opacity = opacity / 100;
-      }
-    }
+
   };
   const onInput = (e) => {
     opacity = parseInt(e.target.value, 10);

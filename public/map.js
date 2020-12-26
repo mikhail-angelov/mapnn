@@ -21,14 +21,27 @@ ymaps.ready(() => {
     }
   );
 
+  const centerObject = new ymaps.Placemark(
+    yandexMap.getCenter(),
+    {},
+    {
+      preset: "islands#geolocationIcon",
+    }
+  );
+  yandexMap.geoObjects.add(centerObject);
+
   yandexMap.events.add("actionend", function (e) {
     const [lat, lng] = e.originalEvent.map.getCenter();
     const z = e.originalEvent.map.getZoom();
     // console.log("on actionend", z, lat, lng);
     secondMap.setCenter({ lat, lng });
     secondMap.setZoom(z - 1);
+    
+    centerObject.geometry.setCoordinates(yandexMap.getCenter());
+    panel.refresh();
   });
   yandexMap.events.add("actiontick", function (e) {
+    centerObject.geometry.setCoordinates(yandexMap.getCenter());
     const [lat, lng] = e.originalEvent.map.getCenter();
     const z = e.originalEvent.map.getZoom();
     // console.log("on tickend", z, lat, lng);
@@ -36,26 +49,26 @@ ymaps.ready(() => {
     secondMap.setZoom(z - 1);
   });
 
+  const onEditMark = ({ id, name, description, point, onSubmit }) => {
+    yandexMap.balloon
+      .open([point.lat, point.lng], {
+        contentHeader: `${id ? "Добавить метку?" : "Обновить метку"}`,
+        contentBody: `<form id="onAdd"><p>Название: <input name="name" value="${name}"/></p>
+        <p>Описание: <input name="description" value="${description}"/></p>
+        <input name="point" value="${point.lat},${point.lng}" hidden/>
+        <input name="id" value="${id}" hidden/>
+        <p><sup>координаты: ${point.lat},${point.lng}} 
+        </sup></p><button>${id ? "Добавить" : "Сохранить"}</button></form>`,
+      })
+      .then(() => {
+        document.getElementById("onAdd").addEventListener("submit", onSubmit);
+      });
+  };
+
   yandexMap.events.add("contextmenu", function (e) {
     if (!yandexMap.balloon.isOpen()) {
-      const coords = e.get("coords");
-      yandexMap.balloon
-        .open(coords, {
-          contentHeader: "Добавить метку?",
-          contentBody: `<form id="onAdd"><p>Название: <input name="name"/><input name="coords" value=${coords.join(
-            ", "
-          )} hidden/></p>
-            <p><sup>координаты: ${[
-              coords[0].toPrecision(6),
-              coords[1].toPrecision(6),
-            ].join(", ")} 
-            </sup></p><button>Добавить</button></form>`,
-        })
-        .then(() => {
-          document
-            .getElementById("onAdd")
-            .addEventListener("submit", addMapItem);
-        });
+      const [lat, lng] = e.get("coords");
+      onEditMark({ name: "", description:"...", point: { lat, lng }, onSubmit: addMapItem });
     } else {
       const point = yandexMap.balloon.getPosition();
       yandexMap.setCenter(point);
@@ -63,7 +76,12 @@ ymaps.ready(() => {
     }
   });
 
-  createOpacitySlider("#ymap canvas", opacity);
+  yandexMap.refreshMe = ()=>{
+    yandexMap.container.fitToViewport()
+    secondMap.resize()
+  }
+
+  createOpacitySlider("#ymap", opacity);
   marks.forEach((p) => addMark(p));
   const panel = createPlacemarksPanel({
     addPlacemark,
@@ -73,18 +91,20 @@ ymaps.ready(() => {
 
   function addMapItem(e) {
     e.preventDefault();
-    const name = e.target.name.value;
+    const formData = new FormData(e.target)
+    const name = formData.get('name');
+    const description = formData.get('description');
     const [lat, lng] = yandexMap.balloon.getPosition();
     yandexMap.balloon.close();
-    panel.addItems([{ name, point: { lat, lng } }]);
+    panel.addItems([{ name, description, point: { lat, lng } }]);
   }
 
-  function addObject(name, coords, type) {
+  function addObject(name, description='', coords, type) {
     const placemark = new ymaps.Placemark(
       coords,
       {
         balloonContent: `<h4>${name}</h4>`,
-        hintContent: `${coords.join(",")}`,
+        hintContent: `${name}:${description}`,
       },
       {
         preset:
@@ -96,11 +116,11 @@ ymaps.ready(() => {
     yandexMap.geoObjects.add(placemark);
     return placemark;
   }
-  function addMark({ name, point }) {
-    return addObject(name, [point.lat, point.lng], "guest");
+  function addMark({ name, description, point }) {
+    return addObject(name,description,  [point.lat, point.lng], "guest");
   }
-  function addPlacemark({ name, point }) {
-    return addObject(name, [point.lat, point.lng], "main");
+  function addPlacemark({ name, description, point }) {
+    return addObject(name, description, [point.lat, point.lng], "main");
   }
   function removePlacemark(mapItem) {
     if (mapItem) {

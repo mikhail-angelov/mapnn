@@ -1,14 +1,4 @@
 #placemarks {
-  position: absolute;
-  width: 180px;
-  height: 300px;
-  bottom: 100px;
-  left: 10px;
-  z-index: 2;
-  background-color: transparent;
-  display: flex;
-  align-items: flex-end;
-
   .placemark-icon {
     font-size: 32px;
     background-color: #f0ffff;
@@ -17,10 +7,11 @@
   }
   .placemark {
     height: 100%;
-    width: 100%;
+    width: 200px;
     background-color: azure;
-    border: 1px solid #add8e60f;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .upload {
@@ -34,42 +25,81 @@
   .header {
     display: flex;
     padding: 8px;
-    background-color: #dcdcdc;
+    background-color: #000;
     border-bottom: 1px solid #808080;
   }
   .header .title {
     flex: 1;
   }
-}
 
-#placemarks .list {
-  margin: 0;
-  padding: 0;
-}
-#placemarks .place-item {
-  display: flex;
-  list-style-type: none;
-  border-bottom: 0.5px solid #6495ed;
-  padding: 6px 8px;
-}
-#placemarks .place-item:hover {
-  background-color: #dcdcdc;
-}
+  .list {
+    margin: 0;
+    padding: 0;
+    flex: 1;
+  }
 
-#placemarks .place-item .title {
-  flex: 1;
-}
+  .place-item {
+    display: flex;
+    list-style-type: none;
+    border-bottom: 0.5px solid #6495ed;
+    padding: 6px;
+    padding-right: 0;
 
-.icon-button {
-  border: none;
-  background: transparent;
-  padding: 0;
-  width: 20px;
-  margin: 0 1px;
-}
-.icon-button:focus {
-  outline: none;
-}
-.icon-button:hover {
-  background: cornflowerblue;
+    &:hover {
+      background-color: #dcdcdc;
+    }
+
+    .title {
+      flex: 1;
+    }
+    .sub-title {
+      color: gray;
+      font-size: small;
+    }
+  }
+  .icon-button {
+    border: none;
+    background: transparent;
+    padding: 0;
+    width: 24px;
+    margin: 0 1px;
+
+    &:focus {
+      outline: none;
+    }
+    &:hover {
+      background: cornflowerblue;
+    }
+  }
+
+  .footer {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    background-color: #000;
+    justify-content: center;
+    align-items: center;
+    .import-export {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #808080;
+      padding: 8px 0;
+      color: #fff;
+      .icon-button {
+        color: #fff;
+        width: auto;
+        font-size: medium;
+        font-family: auto;
+      }
+    }
+    .link {
+      display: flex;
+      color: #fff;
+      align-items: center;
+      img {
+        margin-right: 10px;
+      }
+    }
+  }
 }

@@ -1,6 +1,6 @@
 import { html, render, Component } from "../libs/htm.js";
 import { loadPlacemarksLocal, savePlacemarksLocal } from "../storage.js";
-import { isMobile, getId } from "../utils.js";
+import { isMobile, getId, delay } from "../utils.js";
 import { composeUrlLink } from "../urlParams.js";
 
 export const createPlacemarksPanel = ({
@@ -8,7 +8,7 @@ export const createPlacemarksPanel = ({
   removePlacemark,
   yandexMap,
 }) => {
-  const panel = { addItems: () => {} };
+  const panel = { addItems: () => {}, refresh: () => {} };
 
   let localItems = loadPlacemarksLocal();
   const init = localItems.map((p) => {
@@ -72,20 +72,33 @@ export const createPlacemarksPanel = ({
     reader.readAsText(files[0]);
   };
 
-  const PItem = ({ id, name, point, onRemove }) =>
+  const formatDistance = (distance) => {
+    const d = Math.round(distance || 0);
+    return d > 800 ? `${(d / 1000).toFixed(2)} км` : `${d} м`;
+  };
+
+  const PItem = ({ id, name, point, distance, onRemove, onEdit }) =>
     html`<li
       class="place-item"
       key="${id}"
       onClick=${() => yandexMap.setCenter([point.lat, point.lng])}
     >
-      <div class="title">${name}</div>
+      <div class="title">
+        <div>${name}</div>
+        <div class="sub-title">${formatDistance(distance)}</div>
+      </div>
       <${IconButton}
-        icon="🔗"
+        icon="assets/link.svg"
         tooltips="Скопировать линк"
         onClick=${() => copyUrl([{ id, name, point }])}
       />
       <${IconButton}
-        icon="╳"
+        icon="assets/edit.svg"
+        tooltips="Редактировать линк"
+        onClick=${() => onEdit([{ id, name, point }])}
+      />
+      <${IconButton}
+        icon="assets/remove.svg"
         tooltips="Удалить все"
         onClick=${() => onRemove()}
       />
@@ -93,18 +106,29 @@ export const createPlacemarksPanel = ({
 
   const IconButton = ({ icon, onClick, ...other }) =>
     html`<button class="icon-button" onClick=${onClick} ...${other}>
-      ${icon}
+      <img src=${icon}></img>
     </button>`;
 
   class App extends Component {
     componentDidMount() {
       panel.addItems = this.addItems.bind(this);
-      this.setState({ placemarks: this.props.init, showPanel: !isMobile() });
+      panel.refresh = this.refresh.bind(this);
+      this.setShowPanel(!isMobile());
+      this.setState({
+        placemarks: this.props.init,
+        showPanel: !isMobile(),
+        refresh: Date.now(),
+      });
     }
+
+    refresh() {
+      this.setState({ refresh: Date.now() });
+    }
+
     addItems(items) {
       const { placemarks } = this.state;
-      const added = items.map(({ name, point }) => {
-        const placemark = { id: getId(), name, point };
+      const added = items.map(({ name, description, point }) => {
+        const placemark = { id: getId(), name, description, point };
         const mapItem = addPlacemark(placemark);
         return { ...placemark, mapItem };
       });
@@ -122,41 +146,73 @@ export const createPlacemarksPanel = ({
       savePlacemarksLocal(updatedPlacemarks);
     }
 
+    onEdit(p) {
+      // yandexMap
+      // p.mapItem
+    }
+
     setShowPanel(value) {
-      this.setState({ showPanel: value });
+      this.setState({ showPanel: value }, () => {
+        delay(800, () => yandexMap.refreshMe()); // hack to let containers resize, then resize map
+      });
+    }
+
+    formatPlacemarks(placemarks) {
+      const center = yandexMap.getCenter();
+      const items = placemarks
+        .map((item) => {
+          const distance = ymaps.coordSystem.geo.getDistance(center, [
+            item.point.lat,
+            item.point.lng,
+          ]);
+          return { ...item, distance };
+        })
+        .sort((a, b) => a.distance - b.distance);
+      return items;
     }
 
     render({}, { placemarks = [], showPanel }) {
+      const items = this.formatPlacemarks(placemarks);
       return showPanel
         ? html` <div class="placemark">
                   <div class="header">
                     <div class="title">Метки</div>
-                    <label class="upload" htmlFor="upload">⬇</label>
-                    <input type="file" id="upload" onChange=${(e) =>
-                      importPlacemarks(e.target.files)} hidden></input>
                     <${IconButton}
-                      icon="⇪"
-                      tooltip=""
-                      onClick=${() => downloadPlacemarks(placemarks)}
-                    />
-                    <${IconButton}
-                      icon="˅"
+                      icon="assets/close.svg"
                       onClick=${() => this.setShowPanel(false)}
                     />
                   </div>
                   <ul class="list">
-                    ${placemarks.map(
+                    ${items.map(
                       (p) =>
                         html`<${PItem}
                           ...${p}
                           onRemove=${() => this.removeItem(p.id, p.mapItem)}
+                          onEdit=${() => this.onEdit(p)}
                         />`
                     )}
                   </ul>
+                  <div class="footer">
+                  <div class="import-export">
+                    <label class="upload" htmlFor="upload">
+                    Импорт
+                    </label>
+                    <input type="file" id="upload" onChange=${(e) =>
+                      importPlacemarks(e.target.files)} hidden></input>
+                    <button class="icon-button" onClick=${() =>
+                      downloadPlacemarks(placemarks)}>
+                      Экспорт
+                    </button>
+                  </div>
+                  <a class="link" href="http://www.etomesto.ru/">карты c etomesto.ru</a>
+                  <a class="link" href="https://github.com/mikhail-angelov/mapnn">
+                  <img src="assets/github.svg"></img>исходники
+                  </a>
+                  </div>
                 </div>`
         : html`<${IconButton}
             class="icon-button placemark-icon"
-            icon="⌘"
+            icon="assets/place.svg"
             onClick=${() => this.setShowPanel(true)}
           />`;
     }
