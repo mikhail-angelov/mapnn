@@ -3,16 +3,12 @@ import { loadPlacemarksLocal, savePlacemarksLocal } from "../storage.js";
 import { isMobile, getId, delay } from "../utils.js";
 import { composeUrlLink } from "../urlParams.js";
 
-export const createPlacemarksPanel = ({
-  addPlacemark,
-  removePlacemark,
-  yandexMap,
-}) => {
+export const createPlacemarksPanel = ({ yandexMap }) => {
   const panel = { addItems: () => {}, refresh: () => {} };
 
   let localItems = loadPlacemarksLocal();
   const init = localItems.map((p) => {
-    const mapItem = addPlacemark(p);
+    const mapItem = yandexMap.addPlacemark(p);
     return { ...p, mapItem };
   });
 
@@ -129,7 +125,7 @@ export const createPlacemarksPanel = ({
       const { placemarks } = this.state;
       const added = items.map(({ name, description, point }) => {
         const placemark = { id: getId(), name, description, point };
-        const mapItem = addPlacemark(placemark);
+        const mapItem = yandexMap.addPlacemark(placemark);
         return { ...placemark, mapItem };
       });
 
@@ -141,14 +137,31 @@ export const createPlacemarksPanel = ({
     removeItem(id, mapItem) {
       const { placemarks } = this.state;
       const updatedPlacemarks = placemarks.filter((p) => p.id !== id);
-      removePlacemark(mapItem);
+      if (mapItem) {
+        yandexMap.geoObjects.remove(mapItem);
+      }
       this.setState({ placemarks: updatedPlacemarks });
       savePlacemarksLocal(updatedPlacemarks);
     }
 
     onEdit(p) {
-      // yandexMap
-      // p.mapItem
+      yandexMap.onEditMark({
+        ...p,
+        onSubmit: (e) => {
+          e.preventDefault();
+          yandexMap.balloon.close();
+          const formData = new FormData(e.target);
+          const id = formData.get("id");
+          const name = formData.get("name");
+          const description = formData.get("description");
+          const { placemarks } = this.state;
+          const updatedPlacemarks = placemarks.map((p) =>
+            p.id === id ? { ...p, name, description } : p
+          );
+          this.setState({ placemarks: updatedPlacemarks });
+          savePlacemarksLocal(updatedPlacemarks);
+        },
+      });
     }
 
     setShowPanel(value) {

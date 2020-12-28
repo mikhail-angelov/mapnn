@@ -2,6 +2,7 @@ export const savePlacemarksLocal = (placemarks) => {
   const toSore = placemarks.map((p) => ({
     id: p.id,
     name: p.name,
+    description: p.description,
     point: p.point,
   }));
   localStorage.setItem("placemarks", JSON.stringify(toSore));
@@ -22,5 +23,5 @@ export const saveOpacity = (opacity) => {
 
 export const loadOpacity = () => {
   const o = localStorage.getItem("opacity");
-  return o ? +o : 100;
+  return o ? +o : 50;
 };

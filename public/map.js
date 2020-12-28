@@ -1,4 +1,4 @@
-import { loadPlacemarksLocal, loadOpacity } from "./storage.js";
+import { loadOpacity } from "./storage.js";
 import { parseUrlParams } from "./urlParams.js";
 import { createOpacitySlider } from "./components/opacitySlider.js";
 import { createPlacemarksPanel } from "./components/placemarks.js";
@@ -36,10 +36,10 @@ ymaps.ready(() => {
     // console.log("on actionend", z, lat, lng);
     secondMap.setCenter({ lat, lng });
     secondMap.setZoom(z - 1);
-    
     centerObject.geometry.setCoordinates(yandexMap.getCenter());
     panel.refresh();
   });
+
   yandexMap.events.add("actiontick", function (e) {
     centerObject.geometry.setCoordinates(yandexMap.getCenter());
     const [lat, lng] = e.originalEvent.map.getCenter();
@@ -47,28 +47,40 @@ ymaps.ready(() => {
     // console.log("on tickend", z, lat, lng);
     secondMap.setCenter({ lat, lng });
     secondMap.setZoom(z - 1);
+    centerObject.geometry.setCoordinates(yandexMap.getCenter());
   });
 
-  const onEditMark = ({ id, name, description, point, onSubmit }) => {
+  yandexMap.onEditMark = ({ id, name, description='', point, onSubmit }) => {
+    if (yandexMap.balloon.isOpen()) {
+      yandexMap.balloon.close();
+    }
     yandexMap.balloon
       .open([point.lat, point.lng], {
-        contentHeader: `${id ? "Добавить метку?" : "Обновить метку"}`,
+        contentHeader: `${id ? "Обновить метку" : "Добавить метку?"}`,
         contentBody: `<form id="onAdd"><p>Название: <input name="name" value="${name}"/></p>
         <p>Описание: <input name="description" value="${description}"/></p>
         <input name="point" value="${point.lat},${point.lng}" hidden/>
         <input name="id" value="${id}" hidden/>
-        <p><sup>координаты: ${point.lat},${point.lng}} 
-        </sup></p><button>${id ? "Добавить" : "Сохранить"}</button></form>`,
+        <p><sup>координаты: ${point.lat.toFixed(6)},${point.lng.toFixed(6)}
+        </sup></p><button>${id ? "Сохранить" : "Добавить"}</button></form>`,
       })
       .then(() => {
         document.getElementById("onAdd").addEventListener("submit", onSubmit);
       });
   };
+  yandexMap.addPlacemark = ({ name, description, point }) => {
+    return addObject(name, description, [point.lat, point.lng], "main");
+  };
 
   yandexMap.events.add("contextmenu", function (e) {
     if (!yandexMap.balloon.isOpen()) {
       const [lat, lng] = e.get("coords");
-      onEditMark({ name: "", description:"...", point: { lat, lng }, onSubmit: addMapItem });
+      yandexMap.onEditMark({
+        name: "",
+        description: "...",
+        point: { lat, lng },
+        onSubmit: addMapItem,
+      });
     } else {
       const point = yandexMap.balloon.getPosition();
       yandexMap.setCenter(point);
@@ -76,30 +88,26 @@ ymaps.ready(() => {
     }
   });
 
-  yandexMap.refreshMe = ()=>{
-    yandexMap.container.fitToViewport()
-    secondMap.resize()
-  }
+  yandexMap.refreshMe = () => {
+    yandexMap.container.fitToViewport();
+    secondMap.resize();
+  };
 
   createOpacitySlider("#ymap", opacity);
   marks.forEach((p) => addMark(p));
-  const panel = createPlacemarksPanel({
-    addPlacemark,
-    removePlacemark,
-    yandexMap,
-  });
+  const panel = createPlacemarksPanel({ yandexMap });
 
   function addMapItem(e) {
     e.preventDefault();
-    const formData = new FormData(e.target)
-    const name = formData.get('name');
-    const description = formData.get('description');
+    const formData = new FormData(e.target);
+    const name = formData.get("name");
+    const description = formData.get("description");
     const [lat, lng] = yandexMap.balloon.getPosition();
     yandexMap.balloon.close();
     panel.addItems([{ name, description, point: { lat, lng } }]);
   }
 
-  function addObject(name, description='', coords, type) {
+  function addObject(name, description = "", coords, type) {
     const placemark = new ymaps.Placemark(
       coords,
       {
@@ -117,14 +125,6 @@ ymaps.ready(() => {
     return placemark;
   }
   function addMark({ name, description, point }) {
-    return addObject(name,description,  [point.lat, point.lng], "guest");
-  }
-  function addPlacemark({ name, description, point }) {
-    return addObject(name, description, [point.lat, point.lng], "main");
-  }
-  function removePlacemark(mapItem) {
-    if (mapItem) {
-      yandexMap.geoObjects.remove(mapItem);
-    }
+    return addObject(name, description, [point.lat, point.lng], "guest");
   }
 });
