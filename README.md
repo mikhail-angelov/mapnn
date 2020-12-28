@@ -8,7 +8,9 @@ Live version is deployed here [mapnn.vercel.app](https://mapnn.vercel.app)
 
 Simple screens
 
-|![one](screens/one.png) |![two](screens/two.png) |![three](screens/three.png)|
+one layer|both|other layer
+---|---|---
+![one](screens/one.png) |![two](screens/two.png) |![three](screens/three.png)
 
 ## Dev stack
 - UI: (preact)[https://github.com/preactjs/preact] (htm)[https://github.com/developit/htm]
