@@ -3,6 +3,7 @@ import { parseUrlParams } from "./urlParams.js";
 import { createOpacitySlider } from "./components/opacitySlider.js";
 import { createPlacemarksPanel } from "./components/placemarks.js";
 import { getSecondMap } from "./components/secondMap.js";
+import { isMobile } from "./utils.js";
 
 let { zoom, center: position, opacity, placemarks: marks } = parseUrlParams();
 const secondMap = getSecondMap(position, zoom);
@@ -96,6 +97,12 @@ ymaps.ready(() => {
   createOpacitySlider("#ymap", opacity);
   marks.forEach((p) => addMark(p));
   const panel = createPlacemarksPanel({ yandexMap });
+
+  if(isMobile()){
+    document.getElementById("slider").setAttribute('class','map-overlay mobile')
+  }else {
+    document.getElementById("slider").setAttribute('class','map-overlay desktop')
+  }
 
   function addMapItem(e) {
     e.preventDefault();

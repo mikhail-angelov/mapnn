@@ -13,10 +13,17 @@
   font: bold 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: absolute;
   width: 95%;
-  bottom: 0;
+  
   left: 0;
   padding: 10px;
   z-index: 2;
+  &.mobile{
+    top: 0;
+    margin-top: 40px;
+  }
+  &.desktop{
+    bottom: 0;
+  }
 }
 
 .map-overlay .map-overlay-inner {
