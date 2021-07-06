@@ -5,7 +5,7 @@ import { createPlacemarksPanel } from "./components/placemarks.js";
 import { getSecondMap } from "./components/secondMap.js";
 import { isMobile } from "./utils.js";
 
-let { zoom, center: position, opacity, placemarks: marks } = parseUrlParams();
+let { zoom, center: position, name, opacity, placemarks: marks } = parseUrlParams();
 const secondMap = getSecondMap(position, zoom);
 opacity = opacity ? +opacity : loadOpacity();
 
@@ -51,7 +51,7 @@ ymaps.ready(() => {
     centerObject.geometry.setCoordinates(yandexMap.getCenter());
   });
 
-  yandexMap.onEditMark = ({ id, name, description='', point, onSubmit }) => {
+  yandexMap.onEditMark = ({ id, name, description = '', point, onSubmit }) => {
     if (yandexMap.balloon.isOpen()) {
       yandexMap.balloon.close();
     }
@@ -88,6 +88,22 @@ ymaps.ready(() => {
       yandexMap.balloon.close();
     }
   });
+  yandexMap.events.add("balloonopen", function (e) {
+    const copyButton = document.querySelector('.balloon .icon-button')
+    copyButton?.addEventListener('click', () => {
+      const inputValue = document.querySelector('.balloon input')
+      const link = inputValue?.value
+      console.log('copy', link)
+      navigator.clipboard.writeText(link).then(() => {
+        inputValue.value = 'copied'
+        setTimeout(() => {
+          inputValue.value = link
+        }, 300)
+      }, (err) => {
+        console.error('oops: Could not copy text: ', err);
+      });
+    })
+  });
 
   yandexMap.refreshMe = () => {
     yandexMap.container.fitToViewport();
@@ -98,10 +114,15 @@ ymaps.ready(() => {
   marks.forEach((p) => addMark(p));
   const panel = createPlacemarksPanel({ yandexMap });
 
-  if(isMobile()){
-    document.getElementById("slider").setAttribute('class','map-overlay mobile')
-  }else {
-    document.getElementById("slider").setAttribute('class','map-overlay desktop')
+  if (isMobile()) {
+    document.getElementById("slider").setAttribute('class', 'map-overlay mobile')
+  } else {
+    document.getElementById("slider").setAttribute('class', 'map-overlay desktop')
+  }
+
+  if (name) {
+    const mark = addMark({ name, description: '', point: { lat: position[0], lng: position[1] } });
+    mark.balloon.open()
   }
 
   function addMapItem(e) {
@@ -113,13 +134,31 @@ ymaps.ready(() => {
     yandexMap.balloon.close();
     panel.addItems([{ name, description, point: { lat, lng } }]);
   }
+  function addBalloon(name, description, coords) {
+    const n = encodeURIComponent(name)
+    const d = encodeURIComponent(description)
+    return `<div class="balloon">
+      <h4>${name}</h4>
+      <p>${description}</p>
+      <div class="row">
+        <input disabled value="${location.origin}/?center=${coords[1]},${coords[0]}&name=${n}&description=${d}"/>
+        <button class="icon-button">
+          <img src="assets/copy.svg"></img>
+        </button>
+      </div>
+      </div>`
+  }
 
   function addObject(name, description = "", coords, type) {
     const placemark = new ymaps.Placemark(
       coords,
       {
-        balloonContent: `<h4>${name}</h4>`,
+        balloonContent: addBalloon(name, description, coords),
         hintContent: `${name}:${description}`,
+        hintOptions: {
+          maxWidth: 100,
+          showTimeout: 200,
+        },
       },
       {
         preset:

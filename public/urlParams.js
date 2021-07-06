@@ -2,11 +2,13 @@ const ZOOM = "zoom";
 const CENTER = "center";
 const OPACITY = "opacity";
 const PLACEMARKS = "placemarks";
+const NAME = "name";
 
 export const parseUrlParams = () => {
   const params = new URLSearchParams(location.search);
   const zoom = params.get(ZOOM) ? +params.get(ZOOM) : 13;
   const opacity = params.get(OPACITY)
+  const name = params.get(NAME)
   const center = params.get(CENTER)
     ? params
         .get(CENTER)
@@ -21,6 +23,7 @@ export const parseUrlParams = () => {
     center,
     opacity,
     placemarks,
+    name,
   };
 };
 
